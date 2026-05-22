@@ -42,6 +42,13 @@ app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok", message: "Crypto Portfolio API is running" });
 });
 
+app.use(API_PREFIX, (_req, res, next) => {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+    next();
+});
+
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/portfolio`, portfolioRoutes);
 app.use(`${API_PREFIX}/watchlist`, watchlistRoutes);

@@ -6,33 +6,31 @@ import { fetchSimplePrices } from "../services/crypto.service.js";
 import { buildHoldingsWithPrices, analyzePortfolio } from "../utils/portfolioAnalytics.js";
 
 const getOrCreatePortfolio = async (userId) => {
-    const portfolios = await Portfolio.find({ userId }).sort({ updatedAt: -1 });
+    let portfolio = await Portfolio.findOne({ userId });
 
-    if (portfolios.length === 0) {
-        return Portfolio.create({
-            userId,
-            name: "My Portfolio",
-            holdings: [],
-        });
-    }
+    if (portfolio) return portfolio;
 
-    if (portfolios.length === 1) {
-        return portfolios[0];
-    }
+    return Portfolio.create({
+        userId,
+        name: "My Portfolio",
+        holdings: [],
+    });
+};
 
-    const primary = portfolios[0];
-    for (let i = 1; i < portfolios.length; i++) {
-        for (const holding of portfolios[i].holdings) {
-            const exists = primary.holdings.some(
-                (h) => h.coinId.toLowerCase() === holding.coinId.toLowerCase()
-            );
-            if (!exists) primary.holdings.push(holding);
-        }
-        await Portfolio.findByIdAndDelete(portfolios[i]._id);
-    }
-    primary.markModified("holdings");
-    await primary.save();
-    return primary;
+const buildPortfolioPayload = async (portfolio) => {
+    const coinIds = portfolio.holdings.map((h) => h.coinId);
+    const prices = await safeFetchPrices(coinIds);
+    const enrichedHoldings = buildHoldingsWithPrices(portfolio.holdings, prices);
+
+    return {
+        portfolio: {
+            _id: portfolio._id,
+            name: portfolio.name,
+            description: portfolio.description,
+            holdings: enrichedHoldings,
+        },
+        analysis: analyzePortfolio(enrichedHoldings),
+    };
 };
 
 const safeFetchPrices = async (coinIds) => {
@@ -47,20 +45,10 @@ const safeFetchPrices = async (coinIds) => {
 
 export const getPortfolio = asyncHandler(async (req, res) => {
     const portfolio = await getOrCreatePortfolio(req.user._id);
-    const coinIds = portfolio.holdings.map((h) => h.coinId);
-    const prices = await safeFetchPrices(coinIds);
-    const enrichedHoldings = buildHoldingsWithPrices(portfolio.holdings, prices);
+    const payload = await buildPortfolioPayload(portfolio);
 
     return res.status(200).json(
-        new ApiResponse(200, {
-            portfolio: {
-                _id: portfolio._id,
-                name: portfolio.name,
-                description: portfolio.description,
-                holdings: enrichedHoldings,
-            },
-            analysis: analyzePortfolio(enrichedHoldings),
-        }, "Portfolio fetched successfully")
+        new ApiResponse(200, payload, "Portfolio fetched successfully")
     );
 });
 
@@ -71,18 +59,15 @@ export const updatePortfolioDetails = asyncHandler(async (req, res) => {
         throw new ApiError(400, "At least one field (name or description) is required");
     }
 
-    const updateFields = {};
-    if (name) updateFields.name = name;
-    if (description !== undefined) updateFields.description = description;
+    const portfolio = await getOrCreatePortfolio(req.user._id);
+    if (name) portfolio.name = name;
+    if (description !== undefined) portfolio.description = description;
+    await portfolio.save();
 
-    const portfolio = await Portfolio.findOneAndUpdate(
-        { userId: req.user._id },
-        { $set: updateFields },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
+    const payload = await buildPortfolioPayload(portfolio);
 
     return res.status(200).json(
-        new ApiResponse(200, portfolio, "Portfolio updated successfully")
+        new ApiResponse(200, payload, "Portfolio updated successfully")
     );
 });
 
@@ -124,17 +109,21 @@ export const addHolding = asyncHandler(async (req, res) => {
     portfolio.markModified("holdings");
     await portfolio.save();
 
+    const payload = await buildPortfolioPayload(portfolio);
+
     return res.status(201).json(
-        new ApiResponse(201, portfolio, "Holding added successfully")
+        new ApiResponse(201, payload, "Holding added successfully")
     );
 });
 
 export const updateHolding = asyncHandler(async (req, res) => {
-    const { coinId } = req.params;
+    const normalizedCoinId = req.params.coinId?.trim().toLowerCase();
     const { quantity, buyPrice, coinName, symbol } = req.body;
 
     const portfolio = await getOrCreatePortfolio(req.user._id);
-    const holding = portfolio.holdings.find((h) => h.coinId === coinId);
+    const holding = portfolio.holdings.find(
+        (h) => h.coinId.toLowerCase() === normalizedCoinId
+    );
 
     if (!holding) {
         throw new ApiError(404, "Holding not found in portfolio");
@@ -154,16 +143,20 @@ export const updateHolding = asyncHandler(async (req, res) => {
     portfolio.markModified("holdings");
     await portfolio.save();
 
+    const payload = await buildPortfolioPayload(portfolio);
+
     return res.status(200).json(
-        new ApiResponse(200, portfolio, "Holding updated successfully")
+        new ApiResponse(200, payload, "Holding updated successfully")
     );
 });
 
 export const removeHolding = asyncHandler(async (req, res) => {
-    const { coinId } = req.params;
+    const normalizedCoinId = req.params.coinId?.trim().toLowerCase();
 
     const portfolio = await getOrCreatePortfolio(req.user._id);
-    const index = portfolio.holdings.findIndex((h) => h.coinId === coinId);
+    const index = portfolio.holdings.findIndex(
+        (h) => h.coinId.toLowerCase() === normalizedCoinId
+    );
 
     if (index === -1) {
         throw new ApiError(404, "Holding not found in portfolio");
@@ -173,8 +166,10 @@ export const removeHolding = asyncHandler(async (req, res) => {
     portfolio.markModified("holdings");
     await portfolio.save();
 
+    const payload = await buildPortfolioPayload(portfolio);
+
     return res.status(200).json(
-        new ApiResponse(200, portfolio, "Holding removed successfully")
+        new ApiResponse(200, payload, "Holding removed successfully")
     );
 });
 

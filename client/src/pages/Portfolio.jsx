@@ -154,14 +154,16 @@ export default function Portfolio() {
         quantity: qty,
         buyPrice: price,
       };
+      let refreshed;
       if (editCoinId) {
-        await portfolioApi.updateHolding(editCoinId, body);
+        refreshed = await portfolioApi.updateHolding(editCoinId, body);
         setSuccess("Holding updated successfully.");
       } else {
-        await portfolioApi.addHolding(body);
+        refreshed = await portfolioApi.addHolding(body);
         setSuccess("Holding added successfully.");
       }
       setModalOpen(false);
+      if (refreshed) setData(refreshed);
       await load();
     } catch (err) {
       setError(getErrorMessage(err));

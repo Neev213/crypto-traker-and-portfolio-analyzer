@@ -15,13 +15,20 @@ export default function Markets() {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchError, setSearchError] = useState("");
+  const [isSearchMode, setIsSearchMode] = useState(false);
 
   const loadMarkets = async (p = 1) => {
     setLoading(true);
+    setSearchError("");
+    setIsSearchMode(false);
     try {
       const res = await cryptoApi.markets(p, 50);
       setCoins(res?.coins || []);
       setPage(res?.page || p);
+    } catch (err) {
+      setSearchError(getErrorMessage(err));
+      setCoins([]);
     } finally {
       setLoading(false);
     }
@@ -38,18 +45,26 @@ export default function Markets() {
       return;
     }
     setSearching(true);
+    setSearchError("");
+    setIsSearchMode(true);
     try {
-      const results = await cryptoApi.search(query);
-      setCoins(
-        (results || []).map((c) => ({
-          cryptoId: c.id,
-          name: c.name,
-          symbol: c.symbol,
-          logoUrl: c.large || c.thumb,
-          currentPrice: null,
-          priceChange24h: null,
-        }))
-      );
+      const results = await cryptoApi.search(query.trim());
+      const mapped = (results || []).map((c) => ({
+        cryptoId: c.id,
+        name: c.name,
+        symbol: (c.symbol || "").toUpperCase(),
+        logoUrl: c.large || c.thumb,
+        currentPrice: c.currentPrice ?? null,
+        priceChange24h: c.priceChange24h ?? null,
+        marketCap: c.marketCap ?? null,
+      }));
+      setCoins(mapped);
+      if (!mapped.length) {
+        setSearchError(`No coins found for "${query.trim()}". Try "bitcoin" or "eth".`);
+      }
+    } catch (err) {
+      setCoins([]);
+      setSearchError(getErrorMessage(err) + " — is the backend running?");
     } finally {
       setSearching(false);
     }
@@ -94,6 +109,12 @@ export default function Markets() {
           </Button>
         )}
       </form>
+
+      {searchError && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          {searchError}
+        </div>
+      )}
 
       {loading ? (
         <LoadingSpinner />
@@ -150,8 +171,13 @@ export default function Markets() {
                 ))}
               </tbody>
             </table>
+            {!coins.length && !loading && (
+              <p className="py-16 text-center text-zinc-500">
+                {isSearchMode ? "No search results." : "No market data available."}
+              </p>
+            )}
           </div>
-          {!query && (
+          {!isSearchMode && (
             <div className="flex justify-center gap-3 border-t border-white/5 p-4">
               <Button variant="secondary" disabled={page <= 1} onClick={() => loadMarkets(page - 1)}>
                 Previous

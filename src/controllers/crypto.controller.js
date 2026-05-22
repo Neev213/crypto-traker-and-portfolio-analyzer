@@ -33,9 +33,32 @@ export const searchCryptocurrencies = asyncHandler(async (req, res) => {
     }
 
     const results = await searchCoins(q.trim());
+    const ids = results.map((c) => c.id);
+
+    let prices = {};
+    try {
+        prices = ids.length ? await fetchSimplePrices(ids) : {};
+    } catch (err) {
+        console.error("Search price fetch failed:", err.message);
+    }
+
+    const enriched = results.map((coin) => {
+        const live = prices[coin.id] || {};
+        return {
+            id: coin.id,
+            name: coin.name,
+            symbol: coin.symbol,
+            thumb: coin.thumb,
+            large: coin.large,
+            marketCapRank: coin.market_cap_rank,
+            currentPrice: live.usd ?? null,
+            priceChange24h: live.usd_24h_change ?? null,
+            marketCap: live.usd_market_cap ?? null,
+        };
+    });
 
     return res.status(200).json(
-        new ApiResponse(200, results, "Search results fetched successfully")
+        new ApiResponse(200, enriched, "Search results fetched successfully")
     );
 });
 
