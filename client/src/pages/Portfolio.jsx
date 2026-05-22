@@ -60,6 +60,11 @@ export default function Portfolio() {
       setSearchError("");
       return;
     }
+    if (search.trim().length < 2) {
+      setSearchResults([]);
+      setSearchError("Type at least 2 characters to search.");
+      return;
+    }
     const t = setTimeout(async () => {
       setSearching(true);
       setSearchError("");
@@ -77,7 +82,7 @@ export default function Portfolio() {
       } finally {
         setSearching(false);
       }
-    }, 400);
+    }, 700);
     return () => clearTimeout(t);
   }, [search]);
 

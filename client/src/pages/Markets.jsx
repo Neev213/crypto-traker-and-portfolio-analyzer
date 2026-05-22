@@ -64,7 +64,12 @@ export default function Markets() {
       }
     } catch (err) {
       setCoins([]);
-      setSearchError(getErrorMessage(err) + " — is the backend running?");
+      const msg = getErrorMessage(err);
+      setSearchError(
+        msg.includes("rate limit")
+          ? msg
+          : msg + " — is the backend running?"
+      );
     } finally {
       setSearching(false);
     }

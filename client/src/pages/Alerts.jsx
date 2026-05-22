@@ -40,13 +40,14 @@ export default function Alerts() {
 
   useEffect(() => {
     if (!search.trim()) return setSearchResults([]);
+    if (search.trim().length < 2) return setSearchResults([]);
     const t = setTimeout(async () => {
       try {
-        setSearchResults((await cryptoApi.search(search)) || []);
+        setSearchResults((await cryptoApi.search(search.trim())) || []);
       } catch {
         setSearchResults([]);
       }
-    }, 400);
+    }, 700);
     return () => clearTimeout(t);
   }, [search]);
 

@@ -8,7 +8,7 @@ import {
     searchCoins,
     fetchCoinDetails,
     fetchTrendingCoins,
-    fetchSimplePrices,
+    fetchMarketSnapshotsByIds,
     mapMarketCoin,
 } from "../services/crypto.service.js";
 import { MARKET_DEFAULTS } from "../constants.js";
@@ -28,32 +28,39 @@ export const getMarkets = asyncHandler(async (req, res) => {
 export const searchCryptocurrencies = asyncHandler(async (req, res) => {
     const { q } = req.query;
 
-    if (!q?.trim()) {
+    const term = q?.trim();
+    if (!term) {
         throw new ApiError(400, "Search query 'q' is required");
     }
+    if (term.length < 2) {
+        throw new ApiError(400, "Search query must be at least 2 characters");
+    }
 
-    const results = await searchCoins(q.trim());
+    const results = await searchCoins(term);
     const ids = results.map((c) => c.id);
 
-    let prices = {};
+    let marketById = {};
     try {
-        prices = ids.length ? await fetchSimplePrices(ids) : {};
+        const snapshots = ids.length ? await fetchMarketSnapshotsByIds(ids) : [];
+        marketById = Object.fromEntries(snapshots.map((m) => [m.id, m]));
     } catch (err) {
-        console.error("Search price fetch failed:", err.message);
+        if (err.statusCode !== 429) {
+            console.error("Search market snapshot failed:", err.message);
+        }
     }
 
     const enriched = results.map((coin) => {
-        const live = prices[coin.id] || {};
+        const market = marketById[coin.id];
         return {
             id: coin.id,
             name: coin.name,
             symbol: coin.symbol,
-            thumb: coin.thumb,
-            large: coin.large,
-            marketCapRank: coin.market_cap_rank,
-            currentPrice: live.usd ?? null,
-            priceChange24h: live.usd_24h_change ?? null,
-            marketCap: live.usd_market_cap ?? null,
+            thumb: coin.thumb || market?.image,
+            large: coin.large || market?.image,
+            marketCapRank: coin.market_cap_rank ?? market?.market_cap_rank,
+            currentPrice: market?.current_price ?? null,
+            priceChange24h: market?.price_change_percentage_24h ?? null,
+            marketCap: market?.market_cap ?? null,
         };
     });
 
