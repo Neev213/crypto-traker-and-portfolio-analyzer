@@ -2,31 +2,18 @@ import mongoose from 'mongoose'; // import mongoose to connect to mongodb
 
 // function to connect to mongodb database
 const connectDB = async () => {
-
     try {
-
-        // attempt to connect to mongodb using the uri from .env file
         const connectionInstance = await mongoose.connect(
-            process.env.MONGODB_URI || process.env.MONGO_URI
+            process.env.MONGODB_URI || process.env.MONGO_URI,
+            { serverSelectionTimeoutMS: 8000 }
         );
-        // mongoose.connect returns a connection instance
-        // process.env.MONGO_URI is the mongodb connection string from .env file
-        // example MONGO_URI: mongodb+srv://username:password@cluster.mongodb.net/cryptoDB
-
         console.log(`\n MongoDB connected successfully`);
         console.log(`MongoDB host: ${connectionInstance.connection.host}`);
-        // connectionInstance.connection.host tells you which mongodb server you connected to
-        // useful for knowing if you're connected to local or cloud database
-
     } catch (error) {
-
         console.error(`MongoDB connection failed: ${error.message}`);
-        // log the error message so you know what went wrong
-
-        process.exit(1);
-        // exit the node process with code 1 — means failure
-        // code 0 means success, code 1 means something went wrong
-        // if database connection fails there is no point running the server
+        console.error(`\n[IMPORTANT] If using MongoDB Atlas, make sure your current internet IP address is whitelisted at https://cloud.mongodb.com -> Security -> Network Access -> Add IP Address (or 0.0.0.0/0).`);
+        console.log(`Retrying MongoDB connection in 10 seconds...`);
+        setTimeout(connectDB, 10000);
     }
 };
 

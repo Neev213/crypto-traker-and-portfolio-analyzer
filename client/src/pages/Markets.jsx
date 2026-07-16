@@ -19,16 +19,20 @@ export default function Markets() {
   const [isSearchMode, setIsSearchMode] = useState(false);
 
   const loadMarkets = async (p = 1) => {
-    setLoading(true);
-    setSearchError("");
-    setIsSearchMode(false);
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setSearchError("");
+      setIsSearchMode(false);
+    });
     try {
       const res = await cryptoApi.markets(p, 50);
       setCoins(res?.coins || []);
       setPage(res?.page || p);
     } catch (err) {
-      setSearchError(getErrorMessage(err));
-      setCoins([]);
+      Promise.resolve().then(() => {
+        setSearchError(getErrorMessage(err));
+        setCoins([]);
+      });
     } finally {
       setLoading(false);
     }

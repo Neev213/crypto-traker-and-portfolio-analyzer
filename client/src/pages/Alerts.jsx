@@ -26,9 +26,10 @@ export default function Alerts() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    setLoading(true);
+    Promise.resolve().then(() => setLoading(true));
     try {
-      setAlerts((await alertsApi.get()) || []);
+      const res = await alertsApi.get();
+      setAlerts(res || []);
     } finally {
       setLoading(false);
     }
@@ -39,11 +40,11 @@ export default function Alerts() {
   }, []);
 
   useEffect(() => {
-    if (!search.trim()) return setSearchResults([]);
-    if (search.trim().length < 2) return setSearchResults([]);
+    const query = search.trim();
+    if (!query || query.length < 2) return;
     const t = setTimeout(async () => {
       try {
-        setSearchResults((await cryptoApi.search(search.trim())) || []);
+        setSearchResults((await cryptoApi.search(query)) || []);
       } catch {
         setSearchResults([]);
       }
@@ -174,7 +175,11 @@ export default function Alerts() {
             <Input
               label="Search coin"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearch(val);
+                if (!val.trim()) setSearchResults([]);
+              }}
               placeholder="Bitcoin..."
             />
             {searchResults.length > 0 && (

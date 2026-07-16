@@ -95,16 +95,22 @@ export const addHolding = asyncHandler(async (req, res) => {
     );
 
     if (existing) {
-        throw new ApiError(409, "This coin already exists in your portfolio. Use update holding instead.");
+        const totalQty = existing.quantity + qty;
+        existing.buyPrice = Number(
+            ((existing.quantity * existing.buyPrice + qty * price) / totalQty).toFixed(6)
+        );
+        existing.quantity = Number(totalQty.toFixed(6));
+        if (coinName) existing.coinName = coinName.trim();
+        if (symbol) existing.symbol = symbol.trim().toUpperCase();
+    } else {
+        portfolio.holdings.push({
+            coinId: normalizedCoinId,
+            coinName: coinName.trim(),
+            symbol: symbol.trim().toUpperCase(),
+            quantity: qty,
+            buyPrice: price,
+        });
     }
-
-    portfolio.holdings.push({
-        coinId: normalizedCoinId,
-        coinName: coinName.trim(),
-        symbol: symbol.trim().toUpperCase(),
-        quantity: qty,
-        buyPrice: price,
-    });
 
     portfolio.markModified("holdings");
     await portfolio.save();

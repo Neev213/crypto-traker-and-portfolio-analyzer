@@ -39,7 +39,10 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     // step 3 — check if user already exists with same email or username
     const existingUser = await User.findOne({
-        $or: [{ email }, { username }], // check both email and username
+        $or: [
+            { email: email?.trim().toLowerCase() },
+            { username: username?.trim().toLowerCase() },
+        ],
     });
 
     if (existingUser) {
@@ -108,8 +111,12 @@ export const loginUser = asyncHandler(async (req, res) => {
     }
 
     // step 4 — find user by email or username
+    const conditions = [];
+    if (email) conditions.push({ email: email.trim().toLowerCase() });
+    if (username) conditions.push({ username: username.trim().toLowerCase() });
+
     const user = await User.findOne({
-        $or: [{ email }, { username }],
+        $or: conditions,
     }).select("+password");
 
     if (!user) {

@@ -5,7 +5,7 @@ import {
     removeFromWatchlist,
     getWatchlistMarkets,
 } from "../controllers/watchlist.controller.js";
-import { verifyJWT } from "../db/middleware/auth.middleware.js";
+import { verifyJWT } from "../middleware/auth.middleware.js";
 
 const router = Router();
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { authApi } from "../api/services";
 import { getErrorMessage } from "../api/axios";
@@ -22,21 +23,21 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = useCallback(async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      setLoading(false);
+      Promise.resolve().then(() => setLoading(false));
       return;
     }
     try {
       const data = await authApi.me();
-      setUser(data);
+      Promise.resolve().then(() => setUser(data));
     } catch {
-      clearAuth();
+      Promise.resolve().then(() => clearAuth());
     } finally {
-      setLoading(false);
+      Promise.resolve().then(() => setLoading(false));
     }
   }, []);
 
   useEffect(() => {
-    fetchUser();
+    Promise.resolve().then(() => fetchUser());
   }, [fetchUser]);
 
   const login = async (credentials) => {

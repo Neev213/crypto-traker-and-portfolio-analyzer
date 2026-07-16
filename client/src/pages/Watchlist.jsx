@@ -12,7 +12,7 @@ export default function Watchlist() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    setLoading(true);
+    Promise.resolve().then(() => setLoading(true));
     try {
       setItems((await watchlistApi.get()) || []);
     } finally {

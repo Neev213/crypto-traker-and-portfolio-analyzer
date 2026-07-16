@@ -1,3 +1,6 @@
+import path from "path";
+import fs from "fs";
+import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -14,7 +17,13 @@ import cryptoRoutes from "./routes/crypto.routes.js";
 
 const app = express();
 
-app.use(helmet());
+app.use(
+    helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+);
 app.use(
     cors({
         origin: process.env.CORS_ORIGIN || "*",
@@ -25,7 +34,7 @@ app.use(
 app.use(
     rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 200,
+        max: 300,
         standardHeaders: true,
         legacyHeaders: false,
         message: "Too many requests, please try again later",
@@ -46,6 +55,13 @@ app.use(API_PREFIX, (_req, res, next) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.set("Pragma", "no-cache");
     res.set("Expires", "0");
+    if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+            success: false,
+            statusCode: 503,
+            message: "Database connection pending or blocked. Please whitelist your IP address on MongoDB Atlas (Security -> Network Access -> Add IP Address / 0.0.0.0/0).",
+        });
+    }
     next();
 });
 
@@ -54,6 +70,15 @@ app.use(`${API_PREFIX}/portfolio`, portfolioRoutes);
 app.use(`${API_PREFIX}/watchlist`, watchlistRoutes);
 app.use(`${API_PREFIX}/alerts`, alertRoutes);
 app.use(`${API_PREFIX}/crypto`, cryptoRoutes);
+
+const clientBuildPath = path.join(process.cwd(), "client/dist");
+if (fs.existsSync(clientBuildPath)) {
+    app.use(express.static(clientBuildPath));
+    app.use((req, res, next) => {
+        if (req.path.startsWith(API_PREFIX)) return next();
+        res.sendFile(path.join(clientBuildPath, "index.html"));
+    });
+}
 
 app.use((_req, _res, next) => {
     next(new ApiError(404, "Route not found"));

@@ -20,10 +20,10 @@ export const normalizePortfolioResponse = (raw) => {
   return null;
 };
 
-const portfolioGetConfig = {
+const getPortfolioConfig = () => ({
   headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
   params: { _t: Date.now() },
-};
+});
 
 export const authApi = {
   register: (formData) =>
@@ -37,7 +37,7 @@ export const authApi = {
 
 export const portfolioApi = {
   get: async () =>
-    normalizePortfolioResponse(unwrap(await api.get("/portfolio", portfolioGetConfig))),
+    normalizePortfolioResponse(unwrap(await api.get("/portfolio", getPortfolioConfig()))),
   update: async (body) => unwrap(await api.patch("/portfolio", body)),
   addHolding: async (body) =>
     normalizePortfolioResponse(unwrap(await api.post("/portfolio/holdings", body))),
@@ -49,7 +49,7 @@ export const portfolioApi = {
     normalizePortfolioResponse(
       unwrap(await api.delete(`/portfolio/holdings/${encodeURIComponent(coinId)}`))
     ),
-  analysis: async () => unwrap(await api.get("/portfolio/analysis", portfolioGetConfig)),
+  analysis: async () => unwrap(await api.get("/portfolio/analysis", getPortfolioConfig())),
 };
 
 export const watchlistApi = {

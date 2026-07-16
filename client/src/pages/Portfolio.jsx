@@ -39,12 +39,15 @@ export default function Portfolio() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    setLoading(true);
-    setLoadError("");
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setLoadError("");
+    });
     try {
-      setData(await portfolioApi.get());
+      const res = await portfolioApi.get();
+      setData(res);
     } catch (err) {
-      setLoadError(getErrorMessage(err));
+      Promise.resolve().then(() => setLoadError(getErrorMessage(err)));
     } finally {
       setLoading(false);
     }
@@ -55,21 +58,13 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
-    if (!search.trim()) {
-      setSearchResults([]);
-      setSearchError("");
-      return;
-    }
-    if (search.trim().length < 2) {
-      setSearchResults([]);
-      setSearchError("Type at least 2 characters to search.");
-      return;
-    }
+    const query = search.trim();
+    if (!query || query.length < 2) return;
     const t = setTimeout(async () => {
       setSearching(true);
       setSearchError("");
       try {
-        const res = await cryptoApi.search(search);
+        const res = await cryptoApi.search(query);
         setSearchResults(res || []);
         if (!res?.length) {
           setSearchError("No coins found — try another name or pick a popular coin below.");
@@ -325,7 +320,17 @@ export default function Portfolio() {
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                   <input
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSearch(val);
+                      if (!val.trim()) {
+                        setSearchResults([]);
+                        setSearchError("");
+                      } else if (val.trim().length < 2) {
+                        setSearchResults([]);
+                        setSearchError("Type at least 2 characters to search.");
+                      }
+                    }}
                     placeholder="Type Bitcoin, Ethereum..."
                     className="w-full rounded-xl border border-white/8 bg-white/5 py-3 pl-11 pr-4 text-zinc-100 placeholder:text-zinc-600 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
                   />
