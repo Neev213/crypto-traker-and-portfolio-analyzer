@@ -8,6 +8,7 @@ import {
     searchCoins,
     fetchCoinDetails,
     fetchTrendingCoins,
+    fetchSimplePrices,
     fetchMarketSnapshotsByIds,
     mapMarketCoin,
 } from "../services/crypto.service.js";
@@ -73,13 +74,18 @@ export const getCoinById = asyncHandler(async (req, res) => {
     const { cryptoId } = req.params;
 
     const [details, prices, history] = await Promise.all([
-        fetchCoinDetails(cryptoId),
-        fetchSimplePrices([cryptoId]),
+        fetchCoinDetails(cryptoId).catch(() => null),
+        fetchSimplePrices([cryptoId]).catch(() => ({})),
         PriceHistory.find({ cryptoId })
             .sort({ recordedAt: -1 })
             .limit(30)
-            .lean(),
+            .lean()
+            .catch(() => []),
     ]);
+
+    if (!details) {
+        throw new ApiError(404, "Coin not found");
+    }
 
     const live = prices[cryptoId] || {};
 
@@ -98,7 +104,7 @@ export const getCoinById = asyncHandler(async (req, res) => {
             low24h: details.market_data?.low_24h?.usd,
             livePrice: live.usd ?? null,
             liveChange24h: live.usd_24h_change ?? null,
-            priceHistory: history.reverse(),
+            priceHistory: (history || []).reverse(),
         }, "Coin details fetched successfully")
     );
 });

@@ -55,6 +55,10 @@ app.use(API_PREFIX, (_req, res, next) => {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.set("Pragma", "no-cache");
     res.set("Expires", "0");
+    next();
+});
+
+const requireDB = (_req, res, next) => {
     if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
             success: false,
@@ -63,12 +67,12 @@ app.use(API_PREFIX, (_req, res, next) => {
         });
     }
     next();
-});
+};
 
-app.use(`${API_PREFIX}/users`, userRoutes);
-app.use(`${API_PREFIX}/portfolio`, portfolioRoutes);
-app.use(`${API_PREFIX}/watchlist`, watchlistRoutes);
-app.use(`${API_PREFIX}/alerts`, alertRoutes);
+app.use(`${API_PREFIX}/users`, requireDB, userRoutes);
+app.use(`${API_PREFIX}/portfolio`, requireDB, portfolioRoutes);
+app.use(`${API_PREFIX}/watchlist`, requireDB, watchlistRoutes);
+app.use(`${API_PREFIX}/alerts`, requireDB, alertRoutes);
 app.use(`${API_PREFIX}/crypto`, cryptoRoutes);
 
 const clientBuildPath = path.join(process.cwd(), "client/dist");
