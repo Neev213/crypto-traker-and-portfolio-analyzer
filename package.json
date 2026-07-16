@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "nodemon --experimental-json-modules src/index.js",
     "dev:client": "npm run dev --prefix client",
+    "build": "npm --prefix client install && npm run build:client",
     "build:client": "npm run build --prefix client",
     "start": "node src/index.js"
   },

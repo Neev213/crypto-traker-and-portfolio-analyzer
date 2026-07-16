@@ -14,6 +14,7 @@ import portfolioRoutes from "./routes/portfolio.routes.js";
 import watchlistRoutes from "./routes/watchlist.routes.js";
 import alertRoutes from "./routes/alert.routes.js";
 import cryptoRoutes from "./routes/crypto.routes.js";
+import connectDB from "./db/index.js";
 
 const app = express();
 
@@ -58,7 +59,13 @@ app.use(API_PREFIX, (_req, res, next) => {
     next();
 });
 
-const requireDB = (_req, res, next) => {
+const requireDB = async (_req, res, next) => {
+    if (mongoose.connection.readyState === 0) {
+        await connectDB();
+    }
+    if (mongoose.connection.readyState === 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
     if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
             success: false,

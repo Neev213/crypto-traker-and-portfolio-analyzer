@@ -16,4 +16,9 @@ const startServer = () => {
     connectDB();
 };
 
-startServer();
+if (!process.env.VERCEL) {
+    startServer();
+}
+
+export default app;
+export { app };
