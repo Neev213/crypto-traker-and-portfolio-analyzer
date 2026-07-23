@@ -60,6 +60,13 @@ app.use(API_PREFIX, (_req, res, next) => {
 });
 
 const requireDB = async (_req, res, next) => {
+    // Wait up to 4 seconds for the background connection to finish
+    let retries = 40;
+    while (mongoose.connection.readyState !== 1 && retries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        retries--;
+    }
+
     if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
             success: false,
