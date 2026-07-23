@@ -15,7 +15,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { cryptoApi, watchlistApi, portfolioApi } from "../api/services";
 import { formatCurrency, formatPercent, cn } from "../utils/format";
 import { getErrorMessage } from "../api/axios";
-
+import toast from "react-hot-toast";
 export default function CoinDetail() {
   const { cryptoId } = useParams();
   const [coin, setCoin] = useState(null);
@@ -46,9 +46,9 @@ export default function CoinDetail() {
         coinName: coin.name,
         symbol: coin.symbol,
       });
-      alert("Added to watchlist");
+      toast.success("Added to watchlist");
     } catch (err) {
-      alert(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -64,9 +64,9 @@ export default function CoinDetail() {
         quantity: Number(qty),
         buyPrice: Number(price),
       });
-      alert("Added to portfolio");
+      toast.success("Added to portfolio");
     } catch (err) {
-      alert(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     }
   };
 

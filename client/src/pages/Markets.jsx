@@ -8,7 +8,7 @@ import Button from "../components/ui/Button";
 import { cryptoApi, watchlistApi } from "../api/services";
 import { formatCurrency, formatPercent, cn } from "../utils/format";
 import { getErrorMessage } from "../api/axios";
-
+import toast from "react-hot-toast";
 export default function Markets() {
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,9 +86,9 @@ export default function Markets() {
         coinName: coin.name,
         symbol: coin.symbol,
       });
-      alert(`${coin.name} added to watchlist`);
+      toast.success(`${coin.name} added to watchlist`);
     } catch (err) {
-      alert(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     }
   };
 

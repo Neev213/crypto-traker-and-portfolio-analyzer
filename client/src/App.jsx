@@ -26,10 +26,42 @@ function PublicOnly({ children }) {
   return children;
 }
 
+import { Toaster } from 'react-hot-toast';
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster 
+          position="bottom-right" 
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#1e293b', // slate-800
+              color: '#fff',
+              border: '1px solid #334155', // slate-700
+              borderRadius: '0.5rem',
+            },
+            success: {
+              style: {
+                borderLeft: '4px solid #06b6d4', // cyan-500 (teal)
+              },
+              iconTheme: {
+                primary: '#06b6d4',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              style: {
+                borderLeft: '4px solid #ef4444', // red-500
+              },
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }} 
+        />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Landing />} />
