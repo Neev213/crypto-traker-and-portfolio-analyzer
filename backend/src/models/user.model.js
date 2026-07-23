@@ -52,6 +52,12 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    verificationToken: String,
+    verificationExpiry: Date,
     forgotPasswordToken: String,
     forgotPasswordExpiry: Date,
 }, { timestamps: true });
@@ -86,6 +92,16 @@ userSchema.methods.generateRefreshToken = function () {
     );
 };
 
+userSchema.methods.generateVerificationOTP = function () {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    this.verificationToken = crypto
+        .createHash("sha256")
+        .update(otp)
+        .digest("hex");
+    this.verificationExpiry = Date.now() + 15 * 60 * 1000; // 15 mins
+    return otp;
+};
+
 userSchema.methods.getResetPasswordToken = function () {
     // Generate token
     const resetToken = crypto.randomBytes(20).toString("hex");
@@ -108,6 +124,8 @@ userSchema.methods.toJSON = function () {
     delete user.refreshToken;
     delete user.forgotPasswordToken;
     delete user.forgotPasswordExpiry;
+    delete user.verificationToken;
+    delete user.verificationExpiry;
     return user;
 };
 

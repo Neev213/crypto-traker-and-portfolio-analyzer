@@ -11,6 +11,8 @@ import {
     deleteAccount,
     forgotPassword,
     resetPassword,
+    verifyEmail,
+    resendVerification,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/multer.middleware.js";
@@ -22,6 +24,8 @@ router.post("/login", loginUser);
 router.post("/refresh-token", refreshAccessToken);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+router.post("/verify-email", verifyEmail);
+router.post("/resend-verification", resendVerification);
 
 router.post("/logout", verifyJWT, logoutUser);
 router.get("/me", verifyJWT, getCurrentUser);

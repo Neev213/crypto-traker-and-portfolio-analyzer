@@ -28,8 +28,7 @@ export default function Register() {
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
       if (avatar) fd.append("avatar", avatar);
       await register(fd);
-      await login({ email: form.email, password: form.password });
-      navigate("/dashboard");
+      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

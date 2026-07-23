@@ -16,6 +16,7 @@ const Alerts = lazy(() => import("./pages/Alerts"));
 const CoinDetail = lazy(() => import("./pages/CoinDetail"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
 function PageLoader() {
   return <LoadingSpinner fullScreen />;
@@ -96,6 +97,14 @@ export default function App() {
               element={
                 <PublicOnly>
                   <ResetPassword />
+                </PublicOnly>
+              }
+            />
+            <Route
+              path="/verify-email"
+              element={
+                <PublicOnly>
+                  <VerifyEmail />
                 </PublicOnly>
               }
             />

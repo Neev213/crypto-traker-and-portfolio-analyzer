@@ -35,6 +35,8 @@ export const authApi = {
   me: async () => unwrap(await api.get("/users/me")),
   forgotPassword: (email) => api.post("/users/forgot-password", { email }),
   resetPassword: (token, password) => api.post(`/users/reset-password/${token}`, { password }),
+  verifyEmail: (data) => api.post("/users/verify-email", data),
+  resendVerification: (email) => api.post("/users/resend-verification", { email }),
 };
 
 export const portfolioApi = {

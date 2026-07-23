@@ -23,7 +23,12 @@ export default function Login() {
       await login(form);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      if (msg.toLowerCase().includes("verify your email")) {
+        navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

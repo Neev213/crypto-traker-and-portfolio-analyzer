@@ -80,7 +80,21 @@ export const registerUser = asyncHandler(async (req, res) => {
         holdings: [], // empty holdings array
     });
 
-    // step 7 — fetch the created user without password and refreshToken
+    // step 7 — generate verification OTP and send email
+    const otp = user.generateVerificationOTP();
+    await user.save({ validateBeforeSave: false });
+    
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Verify your CryptoVault Email",
+            message: `Welcome to CryptoVault! Your verification code is: ${otp}\n\nThis code will expire in 15 minutes.`,
+        });
+    } catch (error) {
+        console.error("Failed to send verification email during registration", error);
+    }
+
+    // step 8 — fetch the created user without password and refreshToken
     const createdUser = await User.findById(user._id);
     // toJSON method removes password and refreshToken automatically
 
@@ -124,9 +138,13 @@ export const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, 'User not found — please register first');
     }
 
-    // step 5 — check if account is active
+    // step 5 — check if account is active and verified
     if (!user.isActive) {
         throw new ApiError(403, 'Your account has been deactivated — contact support');
+    }
+    
+    if (!user.isVerified) {
+        throw new ApiError(403, 'Please verify your email to login');
     }
 
     // step 6 — verify the password
@@ -449,4 +467,69 @@ export const resetPassword = asyncHandler(async (req, res) => {
     await user.save();
 
     res.status(200).json(new ApiResponse(200, {}, "Password reset successfully. You can now login."));
+});
+
+// ─── email verification ───────────────────────────────────────────────────────
+
+export const verifyEmail = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        throw new ApiError(400, "Email and OTP are required");
+    }
+
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(otp)
+        .digest("hex");
+
+    const user = await User.findOne({
+        email: email.trim().toLowerCase(),
+        verificationToken: hashedToken,
+        verificationExpiry: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        throw new ApiError(400, "Verification code is invalid or has expired");
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationExpiry = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json(new ApiResponse(200, {}, "Email verified successfully. You can now login."));
+});
+
+export const resendVerification = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        throw new ApiError(400, "Email is required");
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    
+    if (user.isVerified) {
+        throw new ApiError(400, "Email is already verified");
+    }
+
+    const otp = user.generateVerificationOTP();
+    await user.save({ validateBeforeSave: false });
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Verify your CryptoVault Email",
+            message: `Your new verification code is: ${otp}\n\nThis code will expire in 15 minutes.`,
+        });
+        res.status(200).json(new ApiResponse(200, {}, "Verification email sent successfully"));
+    } catch (error) {
+        console.error("Failed to resend verification email", error);
+        throw new ApiError(500, "There was an error sending the email. Try again later");
+    }
 });
